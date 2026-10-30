@@ -1,5 +1,5 @@
 -- ============================================================
--- MAUN HUB: OFFICIAL COMPLETE SCRIPT (FIXED RUNTIME & AUTO STEAL)
+-- MAUN HUB: OFFICIAL ULTIMATE SCRIPT (FIXED AUTO BREAK & ANTI-PLOT STEAL)
 -- ============================================================
 
 local Players = game:GetService("Players")
@@ -8,7 +8,7 @@ local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 
--- Remote Check
+-- Remote Hit Request
 local eggRemote = nil
 pcall(function() eggRemote = ReplicatedStorage:FindFirstChild("EggHitRequest", true) end)
 
@@ -19,15 +19,9 @@ pcall(function()
     end
 end)
 
-local ZoneNames = {
-    "Spawn Zone", "Desert Zone", "Ice Zone", "Candy Zone",
-    "Swamp Zone", "Deep Sea Zone", "Volcano Zone", "Cyber Zone",
-    "Heaven Zone", "Void Zone", "Celestial Zone"
-}
-
 local ValueOptions = {0, 100000000, 500000000, 1000000000, 10000000000, 100000000000, 500000000000, 1000000000000}
 local ValueLabels = {"OFF", "100M", "500M", "1B", "10B", "100B", "500B", "1T"}
-local currentValIndex, currentZoneIndex = 1, 1
+local currentValIndex = 1
 
 local State = { 
     AutoBreak = false, AutoSteal = false, AutoEvent = false,
@@ -179,18 +173,17 @@ end
 
 -- CONTROLS
 local breakBtn, breakStroke = createContentBtn(farmPage, "AUTO BREAK: OFF", 5)
-local zoneTargetBtn = createContentBtn(farmPage, "TARGET: SPAWN ZONE", 36)
-local stealBtn, stealStroke = createContentBtn(farmPage, "CURI OTOMATIS: OFF", 67)
-local valBtn = createContentBtn(farmPage, "MIN VALUE: OFF", 98)
+local stealBtn, stealStroke = createContentBtn(farmPage, "CURI OTOMATIS: OFF", 36)
+local valBtn = createContentBtn(farmPage, "MIN VALUE: OFF", 67)
 
-local zoneBtn = createContentBtn(tpPage, "ZONA: SPAWN ZONE", 5)
+local zoneBtn = createContentBtn(tpPage, "PILIH ZONA (AUTO)", 5)
 local tpZoneBtn = createContentBtn(tpPage, "TELEPORT KE ZONA", 36)
 
 local upTreadmillBtn, strokeTm = createContentBtn(upgradePage, "TREADMILL: OFF", 5)
 local upPickaxeBtn, strokePickaxe = createContentBtn(upgradePage, "KAPAK/PICKAXE: OFF", 36)
 local upSpeedBtn, strokeSpeed = createContentBtn(upgradePage, "SPEED/LARI: OFF", 67)
 
--- INSTANT TP FUNCTION
+-- INSTANT TELEPORT
 local function instantTP(targetCFrame)
     pcall(function()
         local char = player.Character
@@ -204,61 +197,60 @@ local function instantTP(targetCFrame)
     end)
 end
 
-local function getZoneObjectByName(zName)
-    local rawKeyword = zName:gsub(" Zone", ""):lower()
-    for _, obj in pairs(Workspace:GetChildren()) do
-        local n = obj.Name:lower()
-        if n:find(rawKeyword) then return obj end
-    end
+-- DYNAMIC ZONE SCANNER
+local discoveredZones = {}
+local currentZoneIdx = 1
+
+local function scanMapZones()
+    discoveredZones = {}
     for _, obj in pairs(Workspace:GetDescendants()) do
         if obj:IsA("BasePart") or obj:IsA("Model") then
-            local n = obj.Name:lower()
-            if n == rawKeyword or n == zName:lower() then return obj end
+            local n = obj.Name
+            if n:find("Zone") or n:find("Area") or n:find("World") or obj.Name == "Egg" then
+                local parentName = obj.Parent and obj.Parent.Name or ""
+                if not discoveredZones[parentName] and #parentName > 2 and not parentName:find("Workspace") and not parentName:find("Plot") then
+                    table.insert(discoveredZones, {Name = parentName, Position = obj:IsA("Model") and obj:GetPivot().Position or obj.Position})
+                end
+            end
         end
     end
-    return nil
-end
-
-local function tpToZone(zName)
-    local targetObj = getZoneObjectByName(zName)
-    if targetObj then
-        local pos = targetObj:IsA("Model") and targetObj:GetPivot().Position or targetObj.Position
-        instantTP(CFrame.new(pos + Vector3.new(0, 3, 0)))
+    if #discoveredZones == 0 then
+        table.insert(discoveredZones, {Name = "Spawn Zone", Position = safeZoneCFrame.Position})
     end
 end
+scanMapZones()
 
--- INSTANT TP AUTO BREAK LOOP
+-- SERENITY STYLE AUTO BREAK
 task.spawn(function()
     while true do
         if State.AutoBreak then
             pcall(function()
                 local char = player.Character
                 local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                local activeZoneName = ZoneNames[currentZoneIndex]
-                local zoneObj = getZoneObjectByName(activeZoneName)
                 if hrp then
-                    local closestEgg, minDist = nil, 9999
+                    local closestEgg, minDist = nil, 99999
                     for _, obj in pairs(Workspace:GetDescendants()) do
-                        if obj:IsA("BasePart") and obj.Name == "Egg" and obj.Parent then
-                            local isEggInZone = true
-                            if zoneObj then
-                                local zPos = zoneObj:IsA("Model") and zoneObj:GetPivot().Position or zoneObj.Position
-                                if (obj.Position - zPos).Magnitude > 110 then isEggInZone = false end
-                            end
-                            if isEggInZone then
+                        if obj:IsA("BasePart") and (obj.Name == "Egg" or obj.Name:find("Egg")) and obj.Parent then
+                            -- Pastikan bukan milik kandang player
+                            local pName = obj.Parent.Name:lower()
+                            if not pName:find("plot") and not pName:find("base") and not pName:find("kandang") and not pName:find("house") then
                                 local d = (obj.Position - hrp.Position).Magnitude
                                 if d < minDist then minDist, closestEgg = d, obj end
                             end
                         end
                     end
+
                     if closestEgg and closestEgg.Parent then
-                        instantTP(CFrame.new(closestEgg.Position + Vector3.new(0, 3, 0)))
+                        -- 1. Teleport Tepat di atas/samping telur
+                        instantTP(CFrame.new(closestEgg.Position + Vector3.new(0, 2, 0)))
+                        
+                        -- 2. Spam hit remote secara instan (Serenity Style)
                         local hitCount = 0
                         while closestEgg and closestEgg.Parent and State.AutoBreak do
                             hitCount = hitCount + 1
                             if eggRemote then eggRemote:FireServer(closestEgg, hitCount) end
-                            task.wait(0.08)
-                            if hitCount >= 10 or not closestEgg.Parent or (closestEgg:IsA("BasePart") and closestEgg.Transparency > 0.2) then break end
+                            task.wait(0.05) -- Fast Spam
+                            if hitCount >= 12 or not closestEgg.Parent or (closestEgg:IsA("BasePart") and closestEgg.Transparency > 0.2) then break end
                         end
                     end
                 end
@@ -268,7 +260,19 @@ task.spawn(function()
     end
 end)
 
--- AUTO STEAL LOGIC (MATCHING SERENITY HUB VIDEO DEMO)
+-- STRICT ANTI-KANDANG FILTER (AUTO STEAL)
+local function isInPlotOrBase(obj)
+    local current = obj
+    while current and current ~= Workspace do
+        local n = current.Name:lower()
+        if n:find("plot") or n:find("kandang") or n:find("base") or n:find("house") or n:find("tycoon") or n:find("myplot") or n:find("claim") or n:find("fence") then
+            return true
+        end
+        current = current.Parent
+    end
+    return false
+end
+
 local blacklistNames = {"egg", "guard", "shop", "zone", "nest", "part", "base", "spawn", "treadmill", "pickaxe", "cage", "wall", "floor", "plot", "safe", "portal", "door", "gate", "handle", "merchant", "trails", "halloween", "gift", "reward", "sign", "board", "button"}
 
 local function triggerStealPrompt(prompt)
@@ -291,16 +295,19 @@ task.spawn(function()
                     local targetAnimal, minDist = nil, 999999
                     for _, obj in pairs(Workspace:GetDescendants()) do
                         if obj:IsA("Model") and obj ~= char and not Players:GetPlayerFromCharacter(obj) and not skipped[obj] then
-                            local n = obj.Name:lower()
-                            local isBlacklisted = false
-                            for _, bw in pairs(blacklistNames) do if n:find(bw) then isBlacklisted = true break end end
-                            
-                            if not isBlacklisted then
-                                local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true)
-                                if prompt then
-                                    local pPos = prompt.Parent and prompt.Parent.Position or obj:GetPivot().Position
-                                    local d = (pPos - hrp.Position).Magnitude
-                                    if d < minDist then minDist, targetAnimal = d, obj end
+                            -- Wajib BUKAN di dalam kandang/plot siapapun
+                            if not isInPlotOrBase(obj) then
+                                local n = obj.Name:lower()
+                                local isBlacklisted = false
+                                for _, bw in pairs(blacklistNames) do if n:find(bw) then isBlacklisted = true break end end
+                                
+                                if not isBlacklisted then
+                                    local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true)
+                                    if prompt then
+                                        local pPos = prompt.Parent and prompt.Parent.Position or obj:GetPivot().Position
+                                        local d = (pPos - hrp.Position).Magnitude
+                                        if d < minDist then minDist, targetAnimal = d, obj end
+                                    end
                                 end
                             end
                         end
@@ -309,13 +316,12 @@ task.spawn(function()
                     if targetAnimal then
                         local prompt = targetAnimal:FindFirstChildWhichIsA("ProximityPrompt", true)
                         if prompt and prompt.Parent then
-                            -- 1. Instant TP ke depan hewan yang akan dicuri
+                            -- Teleport ke hewan liar di luar kandang
                             instantTP(CFrame.new(prompt.Parent.Position + Vector3.new(0, 2, 3)))
                             task.wait(0.1)
-                            -- 2. Interaksi pencurian
                             local done = triggerStealPrompt(prompt)
                             task.wait(0.15)
-                            -- 3. Teleport balik instan membawa hewan hasil curian ke Safe Zone / Base
+                            -- Bawa kembali ke Base
                             instantTP(safeZoneCFrame)
                             task.wait(0.5)
                             if not done then
@@ -339,13 +345,6 @@ breakBtn.MouseButton1Click:Connect(function()
     if breakStroke then breakStroke.Color = State.AutoBreak and Color3.fromRGB(255, 0, 85) or Color3.fromRGB(40, 42, 55) end
 end)
 
-zoneTargetBtn.MouseButton1Click:Connect(function()
-    currentZoneIndex = (currentZoneIndex % #ZoneNames) + 1
-    local name = ZoneNames[currentZoneIndex]
-    zoneTargetBtn.Text = "TARGET: " .. name:upper()
-    zoneBtn.Text = "ZONA: " .. name:upper()
-end)
-
 stealBtn.MouseButton1Click:Connect(function()
     State.AutoSteal = not State.AutoSteal
     stealBtn.Text = "CURI OTOMATIS: " .. (State.AutoSteal and "ON" or "OFF")
@@ -360,13 +359,17 @@ valBtn.MouseButton1Click:Connect(function()
 end)
 
 zoneBtn.MouseButton1Click:Connect(function()
-    currentZoneIndex = (currentZoneIndex % #ZoneNames) + 1
-    local name = ZoneNames[currentZoneIndex]
-    zoneBtn.Text = "ZONA: " .. name:upper()
-    zoneTargetBtn.Text = "TARGET: " .. name:upper()
+    if #discoveredZones > 0 then
+        currentZoneIdx = (currentZoneIdx % #discoveredZones) + 1
+        zoneBtn.Text = "ZONA: " .. discoveredZones[currentZoneIdx].Name:upper()
+    end
 end)
 
-tpZoneBtn.MouseButton1Click:Connect(function() tpToZone(ZoneNames[currentZoneIndex]) end)
+tpZoneBtn.MouseButton1Click:Connect(function()
+    if #discoveredZones > 0 and discoveredZones[currentZoneIdx] then
+        instantTP(CFrame.new(discoveredZones[currentZoneIdx].Position + Vector3.new(0, 3, 0)))
+    end
+end)
 
 upTreadmillBtn.MouseButton1Click:Connect(function()
     State.UpgradeTreadmill = not State.UpgradeTreadmill
