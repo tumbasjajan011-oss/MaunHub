@@ -1,14 +1,13 @@
 -- ============================================================
--- MAUN HUB V52: ACCURATE HP MULTI-HIT & ZERO ROLLBACK SAFEGUARD
+-- MAUN HUB V53: SERENITY ENGINE REPLICATION (REAL BREAK & SAFE STEAL)
 -- ============================================================
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
-local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 
--- Remote Hit Request
+-- Remote Hit Request (Bypass Anti-Cheat / Hit Trigger)
 local eggRemote = nil
 pcall(function() eggRemote = ReplicatedStorage:FindFirstChild("EggHitRequest", true) end)
 
@@ -19,18 +18,18 @@ pcall(function()
     end
 end)
 
--- DAFTAR ZONA RESMI & ESTIMASI JUMLAH HIT HP TELUR Sesuai Tingkat Kesulitan
+-- DAFTAR ZONA RESMI MAP BREAK AND STEAL AN EGG
 local MapZones = {
-    {Num = 1, Name = "Forest Zone", HitsNeeded = 3, Keywords = {"forest", "rock"}},
-    {Num = 2, Name = "Desert Zone", HitsNeeded = 5, Keywords = {"desert", "cactus", "bones"}},
-    {Num = 3, Name = "Snowy Zone", HitsNeeded = 8, Keywords = {"snow", "frozen", "yeti", "ice"}},
-    {Num = 4, Name = "Candy Zone", HitsNeeded = 12, Keywords = {"candy", "rainbow", "easter"}},
-    {Num = 5, Name = "Swamp Zone", HitsNeeded = 15, Keywords = {"swamp", "gooey", "lake"}},
-    {Num = 6, Name = "Ocean Zone", HitsNeeded = 20, Keywords = {"ocean", "sea", "water"}},
-    {Num = 7, Name = "Hell Zone", HitsNeeded = 25, Keywords = {"hell", "volcano", "angel", "fallen"}},
-    {Num = 8, Name = "Blossom Zone", HitsNeeded = 30, Keywords = {"blossom", "bamboo", "fortune"}},
-    {Num = 9, Name = "Galaxy Zone", HitsNeeded = 35, Keywords = {"galaxy", "starry", "sun", "blackhole"}},
-    {Num = 10, Name = "Graveyard Zone", HitsNeeded = 40, Keywords = {"graveyard", "haunted", "phantom", "skull", "halloween"}}
+    {Num = 1, Name = "Forest Zone", Keywords = {"forest", "rock"}},
+    {Num = 2, Name = "Desert Zone", Keywords = {"desert", "cactus", "bones"}},
+    {Num = 3, Name = "Snowy Zone", Keywords = {"snow", "frozen", "yeti", "ice"}},
+    {Num = 4, Name = "Candy Zone", Keywords = {"candy", "rainbow", "easter"}},
+    {Num = 5, Name = "Swamp Zone", Keywords = {"swamp", "gooey", "lake"}},
+    {Num = 6, Name = "Ocean Zone", Keywords = {"ocean", "sea", "water"}},
+    {Num = 7, Name = "Hell Zone", Keywords = {"hell", "volcano", "angel", "fallen"}},
+    {Num = 8, Name = "Blossom Zone", Keywords = {"blossom", "bamboo", "fortune"}},
+    {Num = 9, Name = "Galaxy Zone", Keywords = {"galaxy", "starry", "sun", "blackhole"}},
+    {Num = 10, Name = "Graveyard Zone", Keywords = {"graveyard", "haunted", "phantom", "skull", "halloween"}}
 }
 
 local ValueOptions = {0, 100000000, 500000000, 1000000000, 10000000000, 100000000000, 500000000000, 1000000000000}
@@ -198,7 +197,7 @@ local upTreadmillBtn, strokeTm = createContentBtn(upgradePage, "TREADMILL: OFF",
 local upPickaxeBtn, strokePickaxe = createContentBtn(upgradePage, "KAPAK/PICKAXE: OFF", 36)
 local upSpeedBtn, strokeSpeed = createContentBtn(upgradePage, "SPEED/LARI: OFF", 67)
 
--- HARD ANTI-ROLLBACK NETRALISASI VELOCITY
+-- TELEPORT UTILITY (SERENITY ENGINE - ZERO ROLLBACK)
 local function zeroVelocity(hrp)
     if hrp then
         hrp.AssemblyLinearVelocity = Vector3.zero
@@ -206,43 +205,20 @@ local function zeroVelocity(hrp)
     end
 end
 
-local function hardNoRollbackTP(targetCFrame)
+local function serenityTP(targetCFrame)
     pcall(function()
         local char = player.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
         if hrp then
             zeroVelocity(hrp)
-            hrp.Anchored = true
             hrp.CFrame = targetCFrame
-            task.wait(0.02)
-            zeroVelocity(hrp)
-            hrp.Anchored = false
             task.wait(0.01)
             zeroVelocity(hrp)
         end
     end)
 end
 
--- TWEEN TELEPORT HALUS
-local function safeTweenTP(targetCFrame)
-    pcall(function()
-        local char = player.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            zeroVelocity(hrp)
-            local dist = (hrp.Position - targetCFrame.Position).Magnitude
-            local dur = dist / 130
-            if dur < 0.05 then dur = 0.05 end
-            
-            local tween = TweenService:Create(hrp, TweenInfo.new(dur, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
-            tween:Play()
-            tween.Completed:Wait()
-            zeroVelocity(hrp)
-        end
-    end)
-end
-
--- PUSAT ZONA
+-- CARI PUSAT ZONA
 local function getZoneCenterPos(zoneData)
     local matchedPositions = {}
     for _, obj in pairs(Workspace:GetDescendants()) do
@@ -279,12 +255,13 @@ end
 local function tpToZoneByData(zoneData)
     local targetPos = getZoneCenterPos(zoneData)
     if targetPos then
-        hardNoRollbackTP(CFrame.new(targetPos + Vector3.new(0, 4, 0)))
+        serenityTP(CFrame.new(targetPos + Vector3.new(0, 4, 0)))
     end
 end
 
--- AUTO BREAK LOOP (LOGIKA MULTI-HIT HINGGA DARAH TELUR BENAR-BENAR HABIS)
-local destroyedEggs = {}
+-- AUTO BREAK LOGIC (PERFECT SERENITY REPLICATION)
+-- Pindah HANYA ketika telur BENAR-BENAR HILANG (Parent == nil), Tanpa tebakan hit & tanpa nunggu animasi!
+local blacklistedEggs = {}
 
 task.spawn(function()
     while true do
@@ -298,8 +275,8 @@ task.spawn(function()
                 if hrp and targetZonePos then
                     local closestEgg, minDist = nil, 99999
                     for _, obj in pairs(Workspace:GetDescendants()) do
-                        if obj:IsA("BasePart") and (obj.Name == "Egg" or obj.Name:find("Egg")) and obj.Parent and not destroyedEggs[obj] then
-                            if (obj.Position - targetZonePos).Magnitude <= 200 then
+                        if obj:IsA("BasePart") and (obj.Name == "Egg" or obj.Name:find("Egg")) and obj.Parent and not blacklistedEggs[obj] then
+                            if (obj.Position - targetZonePos).Magnitude <= 220 then
                                 local d = (obj.Position - hrp.Position).Magnitude
                                 if d < minDist then minDist, closestEgg = d, obj end
                             end
@@ -307,33 +284,40 @@ task.spawn(function()
                     end
 
                     if closestEgg and closestEgg.Parent then
-                        safeTweenTP(CFrame.new(closestEgg.Position + Vector3.new(0, 2.5, 0)))
+                        -- 1. Teleport persis ke sisi telur
+                        serenityTP(CFrame.new(closestEgg.Position + Vector3.new(0, 2, 0)))
                         
-                        -- LOOP PEMUKULAN: Menyesuaikan jumlah HP telur di zona tersebut
-                        local hitsNeeded = zoneData.HitsNeeded or 15
-                        for i = 1, hitsNeeded do
-                            if not State.AutoBreak or not closestEgg.Parent then break end
-                            if eggRemote then eggRemote:FireServer(closestEgg, i) end
-                            task.wait(0.015) -- Pukulan beruntun ultra cepat
+                        -- 2. Hajar Remote Hit beruntun SAMPAI telur hancur total (not closestEgg.Parent)
+                        local hitCounter = 0
+                        while closestEgg and closestEgg.Parent and State.AutoBreak do
+                            hitCounter = hitCounter + 1
+                            if eggRemote then eggRemote:FireServer(closestEgg, hitCounter) end
+                            task.wait(0.015) -- Kecepatan pukul Serenity
+                            
+                            -- Safety fail-safe jika telur kebal (lebih dari 150 hit)
+                            if hitCounter > 150 then
+                                blacklistedEggs[closestEgg] = true
+                                task.delay(10, function() blacklistedEggs[closestEgg] = nil end)
+                                break
+                            end
                         end
-
-                        -- Begitu hit tercapai (darah habis), LANGSUNG PINDAH tanpa tunggu animasi pecah
-                        destroyedEggs[closestEgg] = true
-                        task.delay(6, function() destroyedEggs[closestEgg] = nil end)
                     end
                 end
             end)
-            task.wait(0.03)
+            task.wait(0.02)
         else task.wait(0.3) end
     end
 end)
 
--- STRICT ANTI-KANDANG FILTER (AUTO STEAL INSTANT TP HARD ANTI-ROLLBACK)
-local function isInPlotOrBase(obj)
+-- STRICT ANTI-PLANET X / ANTI-FUSE FILTER FOR AUTO STEAL
+local function isBlacklistedStealLocation(obj)
     local current = obj
     while current and current ~= Workspace do
         local n = current.Name:lower()
-        if n:find("plot") or n:find("kandang") or n:find("base") or n:find("house") or n:find("tycoon") or n:find("myplot") or n:find("claim") or n:find("fence") then
+        -- FILTER SANGAT KETAT: Mencegah TP ke Planet X, Mesin Fuse, Plot Kandang, dsb.
+        if n:find("plot") or n:find("kandang") or n:find("base") or n:find("house") or n:find("tycoon") 
+           or n:find("myplot") or n:find("claim") or n:find("fence") or n:find("fuse") or n:find("planet") 
+           or n:find("machine") or n:find("forge") or n:find("craft") or n:find("shop") or n:find("portal") then
             return true
         end
         current = current.Parent
@@ -341,7 +325,7 @@ local function isInPlotOrBase(obj)
     return false
 end
 
-local blacklistNames = {"egg", "guard", "shop", "zone", "nest", "part", "base", "spawn", "treadmill", "pickaxe", "cage", "wall", "floor", "plot", "safe", "portal", "door", "gate", "handle", "merchant", "trails", "halloween", "gift", "reward", "sign", "board", "button"}
+local blacklistObjectNames = {"egg", "guard", "shop", "zone", "nest", "part", "base", "spawn", "treadmill", "pickaxe", "cage", "wall", "floor", "plot", "safe", "portal", "door", "gate", "handle", "merchant", "trails", "halloween", "gift", "reward", "sign", "board", "button", "fuse", "planet"}
 
 local function triggerStealPrompt(prompt)
     if not prompt or not prompt.Enabled then return false end
@@ -363,17 +347,21 @@ task.spawn(function()
                     local targetAnimal, minDist = nil, 999999
                     for _, obj in pairs(Workspace:GetDescendants()) do
                         if obj:IsA("Model") and obj ~= char and not Players:GetPlayerFromCharacter(obj) and not skipped[obj] then
-                            if not isInPlotOrBase(obj) then
+                            if not isBlacklistedStealLocation(obj) then
                                 local n = obj.Name:lower()
                                 local isBlacklisted = false
-                                for _, bw in pairs(blacklistNames) do if n:find(bw) then isBlacklisted = true break end end
+                                for _, bw in pairs(blacklistObjectNames) do if n:find(bw) then isBlacklisted = true break end end
                                 
                                 if not isBlacklisted then
                                     local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true)
                                     if prompt then
-                                        local pPos = prompt.Parent and prompt.Parent.Position or obj:GetPivot().Position
-                                        local d = (pPos - hrp.Position).Magnitude
-                                        if d < minDist then minDist, targetAnimal = d, obj end
+                                        -- Pastikan teks prompt mengandung aksi curi / panggil hewan
+                                        local actionText = (prompt.ActionText .. " " .. prompt.ObjectText):lower()
+                                        if not actionText:find("fuse") and not actionText:find("craft") then
+                                            local pPos = prompt.Parent and prompt.Parent.Position or obj:GetPivot().Position
+                                            local d = (pPos - hrp.Position).Magnitude
+                                            if d < minDist then minDist, targetAnimal = d, obj end
+                                        end
                                     end
                                 end
                             end
@@ -383,12 +371,12 @@ task.spawn(function()
                     if targetAnimal then
                         local prompt = targetAnimal:FindFirstChildWhichIsA("ProximityPrompt", true)
                         if prompt and prompt.Parent then
-                            hardNoRollbackTP(CFrame.new(prompt.Parent.Position + Vector3.new(0, 2, 3)))
-                            task.wait(0.1)
+                            serenityTP(CFrame.new(prompt.Parent.Position + Vector3.new(0, 2, 3)))
+                            task.wait(0.08)
                             local done = triggerStealPrompt(prompt)
-                            task.wait(0.15)
-                            hardNoRollbackTP(safeZoneCFrame)
-                            task.wait(0.5)
+                            task.wait(0.1)
+                            serenityTP(safeZoneCFrame)
+                            task.wait(0.4)
                             if not done then
                                 skipped[targetAnimal] = true
                                 task.delay(8, function() skipped[targetAnimal] = nil end)
@@ -450,7 +438,7 @@ upPickaxeBtn.MouseButton1Click:Connect(function()
     State.UpgradePickaxe = not State.UpgradePickaxe
     upPickaxeBtn.Text = "KAPAK/PICKAXE: " .. (State.UpgradePickaxe and "ON" or "OFF")
     upPickaxeBtn.BackgroundColor3 = State.UpgradePickaxe and Color3.fromRGB(180, 0, 60) or Color3.fromRGB(22, 24, 32)
-    if strokePickaxe then strokePickaxe.Color = State.UpgradePickaxe and Color3.fromRGB(255, 0, 85) or Color3.fromRGB(40, 42, 55) end
+    if if strokePickaxe then strokePickaxe.Color = State.UpgradePickaxe and Color3.fromRGB(255, 0, 85) or Color3.fromRGB(40, 42, 55) end
 end)
 
 upSpeedBtn.MouseButton1Click:Connect(function()
