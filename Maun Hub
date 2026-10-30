@@ -1,11 +1,10 @@
 -- ============================================================
--- MAUN HUB V42: SERENITY HUB STYLE UI & FAST AUTO BREAK
+-- MAUN HUB: SERENITY STYLE AUTO BREAK & ELEGANT DARK UI
 -- ============================================================
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
-local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 
 -- Remote Check
@@ -31,18 +30,18 @@ local State = {
 
 -- ScreenGui Setup
 local screen = Instance.new("ScreenGui")
-screen.Name = "MaunHub_SerenityV42"
+screen.Name = "MaunHub_Official"
 screen.ResetOnSpawn = false
 
 local targetParent = gethui and gethui() or game:GetService("CoreGui"):FindFirstChild("RobloxGui") and game:GetService("CoreGui") or player:FindFirstChildOfClass("PlayerGui") or player:WaitForChild("PlayerGui", 3)
 if targetParent then screen.Parent = targetParent end
 
--- Floating Logo Toggle Button (Serenity SR Style)
+-- Floating Logo Toggle Button (MH Style)
 local logoBtn = Instance.new("TextButton")
 logoBtn.Size = UDim2.new(0, 42, 0, 42)
 logoBtn.Position = UDim2.new(0, 15, 0, 180)
 logoBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-logoBtn.Text = "SR"
+logoBtn.Text = "MH"
 logoBtn.TextColor3 = Color3.fromRGB(0, 200, 255)
 logoBtn.Font = Enum.Font.GothamBold
 logoBtn.TextSize = 16
@@ -55,7 +54,7 @@ pcall(function()
     stroke.Thickness = 1.5
 end)
 
--- Main Hub Frame (Serenity Dark Theme)
+-- Main Hub Frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 420, 0, 260)
 mainFrame.Position = UDim2.new(0, 70, 0, 120)
@@ -75,10 +74,10 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -40, 0, 30)
 title.Position = UDim2.new(0, 12, 0, 5)
 title.BackgroundTransparency = 1
-title.Text = "SERENITY HUB | MAUN V42"
+title.Text = "MAUN HUB"
 title.TextColor3 = Color3.fromRGB(240, 240, 245)
 title.Font = Enum.Font.GothamBold
-title.TextSize = 11
+title.TextSize = 12
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = mainFrame
 
@@ -117,7 +116,7 @@ minBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
     sidebar.Visible, content.Visible = not isMinimized, not isMinimized
     mainFrame.Size = isMinimized and UDim2.new(0, 420, 0, 35) or UDim2.new(0, 420, 0, 260)
-    minBtn.Text = isMinimized and "+" or "_"
+    minBtn.Text = isMinimized and "+" or "-"
 end)
 
 local pages = {}
@@ -184,35 +183,18 @@ local upTreadmillBtn, strokeTm = createContentBtn(upgradePage, "TREADMILL: OFF",
 local upPickaxeBtn, strokePickaxe = createContentBtn(upgradePage, "KAPAK/PICKAXE: OFF", 36)
 local upSpeedBtn, strokeSpeed = createContentBtn(upgradePage, "SPEED/LARI: OFF", 67)
 
--- TWEEN LOGIC
-local activeTween = nil
-local function resetPhysics(hrp)
-    if hrp then pcall(function() hrp.AssemblyLinearVelocity, hrp.AssemblyAngularVelocity = Vector3.zero, Vector3.zero end) end
-end
-
-local function safeTweenTo(targetPos, speed)
-    local char = player.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp or (hrp.Position - targetPos).Magnitude < 3 then return end
-    if activeTween then pcall(function() activeTween:Cancel() end) end
-    resetPhysics(hrp)
-    local tweenSpeed = speed or 75
-    activeTween = TweenService:Create(hrp, TweenInfo.new((hrp.Position - targetPos).Magnitude / tweenSpeed, Enum.EasingStyle.Linear), { CFrame = CFrame.new(targetPos + Vector3.new(0, 2, 0)) })
-    activeTween:Play()
-    while activeTween and activeTween.PlaybackState == Enum.PlaybackState.Playing do task.wait(0.04) end
-    resetPhysics(hrp)
-end
-
-local function ultraFastTweenTo(targetPos)
-    local char = player.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp or (hrp.Position - targetPos).Magnitude < 3 then return end
-    if activeTween then pcall(function() activeTween:Cancel() end) end
-    resetPhysics(hrp)
-    activeTween = TweenService:Create(hrp, TweenInfo.new((hrp.Position - targetPos).Magnitude / 150, Enum.EasingStyle.Linear), { CFrame = CFrame.new(targetPos + Vector3.new(0, 2, 0)) })
-    activeTween:Play()
-    while activeTween and activeTween.PlaybackState == Enum.PlaybackState.Playing do task.wait(0.01) end
-    resetPhysics(hrp)
+-- INSTANT TP FUNCTION (DIRECT POSITION SETTING)
+local function instantTP(targetCFrame)
+    pcall(function()
+        local char = player.Character
+        if char then
+            if char:FindFirstChild("HumanoidRootPart") then
+                char.HumanoidRootPart.CFrame = targetCFrame
+            elseif char:IsA("Model") then
+                char:PivotTo(targetCFrame)
+            end
+        end
+    end)
 end
 
 local function getZoneObject(zoneNum)
@@ -234,11 +216,11 @@ local function tpToZone(zoneNum)
     local targetObj = getZoneObject(zoneNum)
     if targetObj then
         local pos = targetObj:IsA("Model") and targetObj:GetPivot().Position or targetObj.Position
-        safeTweenTo(pos + Vector3.new(0, 3, 0), 85)
+        instantTP(CFrame.new(pos + Vector3.new(0, 3, 0)))
     end
 end
 
--- SERENITY STYLE AUTO BREAK LOOP (FAST HIT)
+-- SERENITY STYLE INSTANT TP AUTO BREAK LOOP (FAST HIT)
 task.spawn(function()
     while true do
         if State.AutoBreak then
@@ -247,10 +229,6 @@ task.spawn(function()
                 local hrp = char and char:FindFirstChild("HumanoidRootPart")
                 local zoneObj = getZoneObject(currentZone)
                 if hrp then
-                    if zoneObj then
-                        local zPos = zoneObj:IsA("Model") and zoneObj:GetPivot().Position or zoneObj.Position
-                        if (hrp.Position - zPos).Magnitude > 120 then safeTweenTo(zPos + Vector3.new(0, 3, 0), 80) end
-                    end
                     local closestEgg, minDist = nil, 9999
                     for _, obj in pairs(Workspace:GetDescendants()) do
                         if obj:IsA("BasePart") and obj.Name == "Egg" and obj.Parent then
@@ -266,12 +244,14 @@ task.spawn(function()
                         end
                     end
                     if closestEgg and closestEgg.Parent then
-                        if minDist > 5 then safeTweenTo(closestEgg.Position, 80) end
+                        -- INSTANT TELEPORT KE SISI TELUR TERDEKAT
+                        instantTP(CFrame.new(closestEgg.Position + Vector3.new(0, 3, 0)))
+                        
                         local hitCount = 0
                         while closestEgg and closestEgg.Parent and State.AutoBreak do
                             hitCount = hitCount + 1
                             if eggRemote then eggRemote:FireServer(closestEgg, hitCount) end
-                            task.wait(0.25)
+                            task.wait(0.08) -- ULTRA FAST REMOTE SPAM
                             if hitCount >= 10 or not closestEgg.Parent or (closestEgg:IsA("BasePart") and closestEgg.Transparency > 0.2) then break end
                         end
                     end
@@ -300,34 +280,5 @@ stealBtn.MouseButton1Click:Connect(function()
     State.AutoSteal = not State.AutoSteal
     stealBtn.Text = "CURI OTOMATIS: " .. (State.AutoSteal and "ON" or "OFF")
     stealBtn.BackgroundColor3 = State.AutoSteal and Color3.fromRGB(180, 0, 60) or Color3.fromRGB(22, 24, 32)
-    if stealStroke then stealStroke.Color = State.AutoSteal and Color3.fromRGB(255, 0, 85) or Color3.fromRGB(40, 42, 55) end
-end)
-
-zoneBtn.MouseButton1Click:Connect(function()
-    currentZone = (currentZone % 11) + 1
-    zoneBtn.Text = "SELECT ZONE: " .. currentZone
-    zoneTargetBtn.Text = "BREAK ZONE: " .. currentZone
-end)
-
-tpZoneBtn.MouseButton1Click:Connect(function() tpToZone(currentZone) end)
-
-upTreadmillBtn.MouseButton1Click:Connect(function()
-    State.UpgradeTreadmill = not State.UpgradeTreadmill
-    upTreadmillBtn.Text = "TREADMILL: " .. (State.UpgradeTreadmill and "ON" or "OFF")
-    upTreadmillBtn.BackgroundColor3 = State.UpgradeTreadmill and Color3.fromRGB(180, 0, 60) or Color3.fromRGB(22, 24, 32)
-    if strokeTm then strokeTm.Color = State.UpgradeTreadmill and Color3.fromRGB(255, 0, 85) or Color3.fromRGB(40, 42, 55) end
-end)
-
-upPickaxeBtn.MouseButton1Click:Connect(function()
-    State.UpgradePickaxe = not State.UpgradePickaxe
-    upPickaxeBtn.Text = "KAPAK/PICKAXE: " .. (State.UpgradePickaxe and "ON" or "OFF")
-    upPickaxeBtn.BackgroundColor3 = State.UpgradePickaxe and Color3.fromRGB(180, 0, 60) or Color3.fromRGB(22, 24, 32)
-    if strokePickaxe then strokePickaxe.Color = State.UpgradePickaxe and Color3.fromRGB(255, 0, 85) or Color3.fromRGB(40, 42, 55) end
-end)
-
-upSpeedBtn.MouseButton1Click:Connect(function()
-    State.UpgradeSpeed = not State.UpgradeSpeed
-    upSpeedBtn.Text = "SPEED/LARI: " .. (State.UpgradeSpeed and "ON" or "OFF")
-    upSpeedBtn.BackgroundColor3 = State.UpgradeSpeed and Color3.fromRGB(180, 0, 60) or Color3.fromRGB(22, 24, 32)
-    if strokeSpeed then strokeSpeed.Color = State.UpgradeSpeed and Color3.fromRGB(255, 0, 85) or Color3.fromRGB(40, 42, 55) end
+    if stealStroke me then end
 end)
