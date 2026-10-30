@@ -1,5 +1,5 @@
 -- ============================================================
--- MAUN HUB V51: HARD ANTI-ROLLBACK SAFEGUARD & MAP BIOME FIX
+-- MAUN HUB V52: ACCURATE HP MULTI-HIT & ZERO ROLLBACK SAFEGUARD
 -- ============================================================
 
 local Players = game:GetService("Players")
@@ -19,18 +19,18 @@ pcall(function()
     end
 end)
 
--- DAFTAR ZONA RESMI MAP BREAK AND STEAL AN EGG
+-- DAFTAR ZONA RESMI & ESTIMASI JUMLAH HIT HP TELUR Sesuai Tingkat Kesulitan
 local MapZones = {
-    {Num = 1, Name = "Forest Zone", Keywords = {"forest", "rock"}},
-    {Num = 2, Name = "Desert Zone", Keywords = {"desert", "cactus", "bones"}},
-    {Num = 3, Name = "Snowy Zone", Keywords = {"snow", "frozen", "yeti", "ice"}},
-    {Num = 4, Name = "Candy Zone", Keywords = {"candy", "rainbow", "easter"}},
-    {Num = 5, Name = "Swamp Zone", Keywords = {"swamp", "gooey", "lake"}},
-    {Num = 6, Name = "Ocean Zone", Keywords = {"ocean", "sea", "water"}},
-    {Num = 7, Name = "Hell Zone", Keywords = {"hell", "volcano", "angel", "fallen"}},
-    {Num = 8, Name = "Blossom Zone", Keywords = {"blossom", "bamboo", "fortune"}},
-    {Num = 9, Name = "Galaxy Zone", Keywords = {"galaxy", "starry", "sun", "blackhole"}},
-    {Num = 10, Name = "Graveyard Zone", Keywords = {"graveyard", "haunted", "phantom", "skull", "halloween"}}
+    {Num = 1, Name = "Forest Zone", HitsNeeded = 3, Keywords = {"forest", "rock"}},
+    {Num = 2, Name = "Desert Zone", HitsNeeded = 5, Keywords = {"desert", "cactus", "bones"}},
+    {Num = 3, Name = "Snowy Zone", HitsNeeded = 8, Keywords = {"snow", "frozen", "yeti", "ice"}},
+    {Num = 4, Name = "Candy Zone", HitsNeeded = 12, Keywords = {"candy", "rainbow", "easter"}},
+    {Num = 5, Name = "Swamp Zone", HitsNeeded = 15, Keywords = {"swamp", "gooey", "lake"}},
+    {Num = 6, Name = "Ocean Zone", HitsNeeded = 20, Keywords = {"ocean", "sea", "water"}},
+    {Num = 7, Name = "Hell Zone", HitsNeeded = 25, Keywords = {"hell", "volcano", "angel", "fallen"}},
+    {Num = 8, Name = "Blossom Zone", HitsNeeded = 30, Keywords = {"blossom", "bamboo", "fortune"}},
+    {Num = 9, Name = "Galaxy Zone", HitsNeeded = 35, Keywords = {"galaxy", "starry", "sun", "blackhole"}},
+    {Num = 10, Name = "Graveyard Zone", HitsNeeded = 40, Keywords = {"graveyard", "haunted", "phantom", "skull", "halloween"}}
 }
 
 local ValueOptions = {0, 100000000, 500000000, 1000000000, 10000000000, 100000000000, 500000000000, 1000000000000}
@@ -198,7 +198,7 @@ local upTreadmillBtn, strokeTm = createContentBtn(upgradePage, "TREADMILL: OFF",
 local upPickaxeBtn, strokePickaxe = createContentBtn(upgradePage, "KAPAK/PICKAXE: OFF", 36)
 local upSpeedBtn, strokeSpeed = createContentBtn(upgradePage, "SPEED/LARI: OFF", 67)
 
--- SYSTEM HARD ANTI-ROLLBACK (SAFEGUARD POSITION SYNC)
+-- HARD ANTI-ROLLBACK NETRALISASI VELOCITY
 local function zeroVelocity(hrp)
     if hrp then
         hrp.AssemblyLinearVelocity = Vector3.zero
@@ -223,7 +223,7 @@ local function hardNoRollbackTP(targetCFrame)
     end)
 end
 
--- TWEEN TP SANGAT HALUS KETIKA AUTO BREAK (PREVENTS ROLLBACK)
+-- TWEEN TELEPORT HALUS
 local function safeTweenTP(targetCFrame)
     pcall(function()
         local char = player.Character
@@ -242,7 +242,7 @@ local function safeTweenTP(targetCFrame)
     end)
 end
 
--- CARI PUSAT KOORDINAT ZONA MENGGUNAKAN UNIK NAMA BIOME/TELUR
+-- PUSAT ZONA
 local function getZoneCenterPos(zoneData)
     local matchedPositions = {}
     for _, obj in pairs(Workspace:GetDescendants()) do
@@ -283,7 +283,7 @@ local function tpToZoneByData(zoneData)
     end
 end
 
--- AUTO BREAK LOOP (ANTI ROLLBACK WITH SAFE TWEEN)
+-- AUTO BREAK LOOP (LOGIKA MULTI-HIT HINGGA DARAH TELUR BENAR-BENAR HABIS)
 local destroyedEggs = {}
 
 task.spawn(function()
@@ -309,18 +309,21 @@ task.spawn(function()
                     if closestEgg and closestEgg.Parent then
                         safeTweenTP(CFrame.new(closestEgg.Position + Vector3.new(0, 2.5, 0)))
                         
-                        for i = 1, 8 do
+                        -- LOOP PEMUKULAN: Menyesuaikan jumlah HP telur di zona tersebut
+                        local hitsNeeded = zoneData.HitsNeeded or 15
+                        for i = 1, hitsNeeded do
                             if not State.AutoBreak or not closestEgg.Parent then break end
                             if eggRemote then eggRemote:FireServer(closestEgg, i) end
-                            task.wait(0.02)
+                            task.wait(0.015) -- Pukulan beruntun ultra cepat
                         end
 
+                        -- Begitu hit tercapai (darah habis), LANGSUNG PINDAH tanpa tunggu animasi pecah
                         destroyedEggs[closestEgg] = true
-                        task.delay(5, function() destroyedEggs[closestEgg] = nil end)
+                        task.delay(6, function() destroyedEggs[closestEgg] = nil end)
                     end
                 end
             end)
-            task.wait(0.05)
+            task.wait(0.03)
         else task.wait(0.3) end
     end
 end)
