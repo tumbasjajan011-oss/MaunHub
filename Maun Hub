@@ -1,9 +1,14 @@
 -- ============================================================
--- MAUN HUB V41 (COMPACT FULL VERSION - UNDER 400 LINES)
+-- MAUN HUB V42: SERENITY HUB STYLE UI & FAST AUTO BREAK
 -- ============================================================
-local Players, ReplicatedStorage, Workspace, TweenService = game:GetService("Players"), game:GetService("ReplicatedStorage"), game:GetService("Workspace"), game:GetService("TweenService")
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 
+-- Remote Check
 local eggRemote = nil
 pcall(function() eggRemote = ReplicatedStorage:FindFirstChild("EggHitRequest", true) end)
 
@@ -24,89 +29,115 @@ local State = {
     MinStealValue = 0
 }
 
+-- ScreenGui Setup
 local screen = Instance.new("ScreenGui")
-screen.Name = "MaunHub_V41"
+screen.Name = "MaunHub_SerenityV42"
 screen.ResetOnSpawn = false
 
 local targetParent = gethui and gethui() or game:GetService("CoreGui"):FindFirstChild("RobloxGui") and game:GetService("CoreGui") or player:FindFirstChildOfClass("PlayerGui") or player:WaitForChild("PlayerGui", 3)
 if targetParent then screen.Parent = targetParent end
 
+-- Floating Logo Toggle Button (Serenity SR Style)
+local logoBtn = Instance.new("TextButton")
+logoBtn.Size = UDim2.new(0, 42, 0, 42)
+logoBtn.Position = UDim2.new(0, 15, 0, 180)
+logoBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+logoBtn.Text = "SR"
+logoBtn.TextColor3 = Color3.fromRGB(0, 200, 255)
+logoBtn.Font = Enum.Font.GothamBold
+logoBtn.TextSize = 16
+logoBtn.Active, logoBtn.Draggable = true, true
+logoBtn.Parent = screen
+pcall(function() Instance.new("UICorner", logoBtn).CornerRadius = UDim.new(0, 10) end)
+pcall(function()
+    local stroke = Instance.new("UIStroke", logoBtn)
+    stroke.Color = Color3.fromRGB(255, 0, 85)
+    stroke.Thickness = 1.5
+end)
+
+-- Main Hub Frame (Serenity Dark Theme)
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 320, 0, 240)
-mainFrame.Position = UDim2.new(0, 20, 0, 120)
-mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
+mainFrame.Size = UDim2.new(0, 420, 0, 260)
+mainFrame.Position = UDim2.new(0, 70, 0, 120)
+mainFrame.BackgroundColor3 = Color3.fromRGB(13, 14, 18)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active, mainFrame.Draggable = true, true
 mainFrame.Parent = screen
 pcall(function() Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 8) end)
 pcall(function()
-    local mainStroke = Instance.new("UIStroke")
-    mainStroke.Color = Color3.fromRGB(0, 170, 255)
-    mainStroke.Thickness = 1.5
-    mainStroke.Parent = mainFrame
+    local mainStroke = Instance.new("UIStroke", mainFrame)
+    mainStroke.Color = Color3.fromRGB(255, 0, 85)
+    mainStroke.Thickness = 1.2
 end)
 
+-- Top Title
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -35, 0, 35)
-title.Position = UDim2.new(0, 10, 0, 0)
+title.Size = UDim2.new(1, -40, 0, 30)
+title.Position = UDim2.new(0, 12, 0, 5)
 title.BackgroundTransparency = 1
-title.Text = "🛡️ MAUN HUB V41"
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Text = "SERENITY HUB | MAUN V42"
+title.TextColor3 = Color3.fromRGB(240, 240, 245)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 11
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = mainFrame
 
+-- Minimize Button
 local minBtn = Instance.new("TextButton")
-minBtn.Size = UDim2.new(0, 25, 0, 25)
-minBtn.Position = UDim2.new(1, -30, 0, 5)
-minBtn.BackgroundColor3 = Color3.fromRGB(30, 32, 45)
-minBtn.Text = "_"
+minBtn.Size = UDim2.new(0, 22, 0, 22)
+minBtn.Position = UDim2.new(1, -28, 0, 6)
+minBtn.BackgroundColor3 = Color3.fromRGB(25, 27, 35)
+minBtn.Text = "-"
 minBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 minBtn.Font = Enum.Font.GothamBold
-minBtn.TextSize = 12
+minBtn.TextSize = 14
 minBtn.Parent = mainFrame
 pcall(function() Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 5) end)
 
-local sidebarFrame = Instance.new("Frame")
-sidebarFrame.Size = UDim2.new(0, 90, 1, -35)
-sidebarFrame.Position = UDim2.new(0, 0, 0, 35)
-sidebarFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
-sidebarFrame.BorderSizePixel = 0
-sidebarFrame.Parent = mainFrame
+logoBtn.MouseButton1Click:Connect(function() mainFrame.Visible = not mainFrame.Visible end)
 
-local contentFrame = Instance.new("Frame")
-contentFrame.Size = UDim2.new(1, -95, 1, -40)
-contentFrame.Position = UDim2.new(0, 95, 0, 35)
-contentFrame.BackgroundTransparency = 1
-contentFrame.Parent = mainFrame
+-- Sidebar Frame
+local sidebar = Instance.new("Frame")
+sidebar.Size = UDim2.new(0, 110, 1, -38)
+sidebar.Position = UDim2.new(0, 0, 0, 38)
+sidebar.BackgroundColor3 = Color3.fromRGB(18, 19, 25)
+sidebar.BorderSizePixel = 0
+sidebar.Parent = mainFrame
+
+local content = Instance.new("ScrollingFrame")
+content.Size = UDim2.new(1, -118, 1, -42)
+content.Position = UDim2.new(0, 114, 0, 38)
+content.BackgroundTransparency = 1
+content.CanvasSize = UDim2.new(0, 0, 1.5, 0)
+content.ScrollBarThickness = 3
+content.Parent = mainFrame
 
 local isMinimized = false
 minBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
-    sidebarFrame.Visible, contentFrame.Visible = not isMinimized, not isMinimized
-    mainFrame.Size = isMinimized and UDim2.new(0, 320, 0, 35) or UDim2.new(0, 320, 0, 240)
+    sidebar.Visible, content.Visible = not isMinimized, not isMinimized
+    mainFrame.Size = isMinimized and UDim2.new(0, 420, 0, 35) or UDim2.new(0, 420, 0, 260)
     minBtn.Text = isMinimized and "+" or "_"
 end)
 
 local pages = {}
 local function createTab(name, posY)
     local tabBtn = Instance.new("TextButton")
-    tabBtn.Size = UDim2.new(1, -10, 0, 30)
+    tabBtn.Size = UDim2.new(1, -10, 0, 28)
     tabBtn.Position = UDim2.new(0, 5, 0, posY)
-    tabBtn.BackgroundColor3 = Color3.fromRGB(30, 32, 45)
+    tabBtn.BackgroundColor3 = Color3.fromRGB(25, 27, 36)
     tabBtn.Text = name
-    tabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    tabBtn.TextColor3 = Color3.fromRGB(180, 185, 200)
     tabBtn.Font = Enum.Font.GothamMedium
-    tabBtn.TextSize = 10
-    tabBtn.Parent = sidebarFrame
+    tabBtn.TextSize = 9
+    tabBtn.Parent = sidebar
     pcall(function() Instance.new("UICorner", tabBtn).CornerRadius = UDim.new(0, 5) end)
 
     local page = Instance.new("Frame")
     page.Size = UDim2.new(1, 0, 1, 0)
     page.BackgroundTransparency = 1
     page.Visible = false
-    page.Parent = contentFrame
+    page.Parent = content
     pages[name] = page
 
     tabBtn.MouseButton1Click:Connect(function()
@@ -116,45 +147,44 @@ local function createTab(name, posY)
     return page
 end
 
-local farmPage = createTab("Auto Farm", 5)
-local tpPage = createTab("Teleport", 40)
-local eventPage = createTab("Auto Event", 75)
-local upgradePage = createTab("Auto Upgrade", 110)
+local farmPage = createTab("Otomatisasi", 5)
+local tpPage = createTab("Teleport", 38)
+local upgradePage = createTab("Auto Upgrade", 71)
 farmPage.Visible = true
 
 local function createContentBtn(parent, text, posY)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -10, 0, 30)
+    btn.Size = UDim2.new(1, -10, 0, 28)
     btn.Position = UDim2.new(0, 0, 0, posY)
-    btn.BackgroundColor3 = Color3.fromRGB(25, 28, 40)
+    btn.BackgroundColor3 = Color3.fromRGB(22, 24, 32)
     btn.Text = text
     btn.TextColor3 = Color3.fromRGB(220, 220, 230)
     btn.Font = Enum.Font.GothamMedium
-    btn.TextSize = 10
+    btn.TextSize = 9
     btn.Parent = parent
     pcall(function() Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5) end)
     local btnStroke = nil
     pcall(function()
         btnStroke = Instance.new("UIStroke", btn)
-        btnStroke.Color = Color3.fromRGB(45, 50, 70)
+        btnStroke.Color = Color3.fromRGB(40, 42, 55)
     end)
     return btn, btnStroke
 end
 
+-- CONTROLS
 local breakBtn, breakStroke = createContentBtn(farmPage, "AUTO BREAK: OFF", 5)
-local zoneTargetBtn = createContentBtn(farmPage, "BREAK ZONE: 1", 38)
-local stealBtn, stealStroke = createContentBtn(farmPage, "AUTO STEAL: OFF", 71)
-local valBtn = createContentBtn(farmPage, "MIN VALUE: OFF", 104)
+local zoneTargetBtn = createContentBtn(farmPage, "BREAK ZONE: 1", 36)
+local stealBtn, stealStroke = createContentBtn(farmPage, "CURI OTOMATIS: OFF", 67)
+local valBtn = createContentBtn(farmPage, "MIN VALUE: OFF", 98)
 
 local zoneBtn = createContentBtn(tpPage, "SELECT ZONE: 1", 5)
-local tpZoneBtn = createContentBtn(tpPage, "TELEPORT TO ZONE", 38)
+local tpZoneBtn = createContentBtn(tpPage, "TELEPORT TO ZONE", 36)
 
-local eventBtn, eventStroke = createContentBtn(eventPage, "AUTO EVENT: OFF", 5)
+local upTreadmillBtn, strokeTm = createContentBtn(upgradePage, "TREADMILL: OFF", 5)
+local upPickaxeBtn, strokePickaxe = createContentBtn(upgradePage, "KAPAK/PICKAXE: OFF", 36)
+local upSpeedBtn, strokeSpeed = createContentBtn(upgradePage, "SPEED/LARI: OFF", 67)
 
-local upTreadmillBtn, strokeTm = createContentBtn(upgradePage, "UPGRADE TREADMILL: OFF", 5)
-local upPickaxeBtn, strokePickaxe = createContentBtn(upgradePage, "UPGRADE KAPAK: OFF", 38)
-local upSpeedBtn, strokeSpeed = createContentBtn(upgradePage, "UPGRADE SPEED/LARI: OFF", 71)
-
+-- TWEEN LOGIC
 local activeTween = nil
 local function resetPhysics(hrp)
     if hrp then pcall(function() hrp.AssemblyLinearVelocity, hrp.AssemblyAngularVelocity = Vector3.zero, Vector3.zero end) end
@@ -166,10 +196,10 @@ local function safeTweenTo(targetPos, speed)
     if not hrp or (hrp.Position - targetPos).Magnitude < 3 then return end
     if activeTween then pcall(function() activeTween:Cancel() end) end
     resetPhysics(hrp)
-    local tweenSpeed = speed or 70
+    local tweenSpeed = speed or 75
     activeTween = TweenService:Create(hrp, TweenInfo.new((hrp.Position - targetPos).Magnitude / tweenSpeed, Enum.EasingStyle.Linear), { CFrame = CFrame.new(targetPos + Vector3.new(0, 2, 0)) })
     activeTween:Play()
-    while activeTween and activeTween.PlaybackState == Enum.PlaybackState.Playing do task.wait(0.05) end
+    while activeTween and activeTween.PlaybackState == Enum.PlaybackState.Playing do task.wait(0.04) end
     resetPhysics(hrp)
 end
 
@@ -204,34 +234,11 @@ local function tpToZone(zoneNum)
     local targetObj = getZoneObject(zoneNum)
     if targetObj then
         local pos = targetObj:IsA("Model") and targetObj:GetPivot().Position or targetObj.Position
-        safeTweenTo(pos + Vector3.new(0, 3, 0), 80)
+        safeTweenTo(pos + Vector3.new(0, 3, 0), 85)
     end
 end
 
-local function parseValueText(txt)
-    if not txt then return 0 end
-    txt = tostring(txt):upper():gsub("%$", ""):gsub(",", "")
-    local num = tonumber(txt:match("[%d%.]+")) or 0
-    if txt:find("T") then return num * 1000000000000 end
-    if txt:find("B") then return num * 1000000000 end
-    if txt:find("M") then return num * 1000000 end
-    if txt:find("K") then return num * 1000 end
-    return num
-end
-
-local function getAnimalValue(obj)
-    local maxVal = 0
-    pcall(function()
-        for _, gui in pairs(obj:GetDescendants()) do
-            if gui:IsA("TextLabel") or gui:IsA("TextButton") then
-                local val = parseValueText(gui.Text)
-                if val > maxVal then maxVal = val end
-            end
-        end
-    end)
-    return maxVal
-end
-
+-- SERENITY STYLE AUTO BREAK LOOP (FAST HIT)
 task.spawn(function()
     while true do
         if State.AutoBreak then
@@ -242,7 +249,7 @@ task.spawn(function()
                 if hrp then
                     if zoneObj then
                         local zPos = zoneObj:IsA("Model") and zoneObj:GetPivot().Position or zoneObj.Position
-                        if (hrp.Position - zPos).Magnitude > 120 then safeTweenTo(zPos + Vector3.new(0, 3, 0), 75) end
+                        if (hrp.Position - zPos).Magnitude > 120 then safeTweenTo(zPos + Vector3.new(0, 3, 0), 80) end
                     end
                     local closestEgg, minDist = nil, 9999
                     for _, obj in pairs(Workspace:GetDescendants()) do
@@ -259,123 +266,28 @@ task.spawn(function()
                         end
                     end
                     if closestEgg and closestEgg.Parent then
-                        if minDist > 5 then safeTweenTo(closestEgg.Position, 75) end
+                        if minDist > 5 then safeTweenTo(closestEgg.Position, 80) end
                         local hitCount = 0
                         while closestEgg and closestEgg.Parent and State.AutoBreak do
                             hitCount = hitCount + 1
                             if eggRemote then eggRemote:FireServer(closestEgg, hitCount) end
-                            task.wait(0.35)
-                            if hitCount >= 8 or not closestEgg.Parent or (closestEgg:IsA("BasePart") and closestEgg.Transparency > 0.2) then break end
+                            task.wait(0.25)
+                            if hitCount >= 10 or not closestEgg.Parent or (closestEgg:IsA("BasePart") and closestEgg.Transparency > 0.2) then break end
                         end
                     end
                 end
             end)
-            task.wait(0.1)
+            task.wait(0.05)
         else task.wait(0.3) end
     end
 end)
 
-local blacklist = {"egg", "guard", "shop", "zone", "nest", "part", "base", "spawn", "treadmill", "pickaxe", "cage", "wall", "floor", "plot", "safe", "portal", "door", "gate", "handle", "merchant", "trails", "halloween", "gift", "reward", "sign", "board", "button"}
-
-local function isInPlot(obj)
-    local current = obj
-    while current and current ~= Workspace do
-        local n = current.Name:lower()
-        if n:find("plot") or n:find("kandang") or n:find("base") or n:find("house") or n:find("tycoon") then return true end
-        current = current.Parent
-    end
-    return false
-end
-
-local function isAnimal(obj)
-    if not obj or not obj:IsA("Model") or obj == player.Character or Players:GetPlayerFromCharacter(obj) or obj:FindFirstChildOfClass("Humanoid") then return false end
-    if isInPlot(obj) then return false end
-    local n = obj.Name:lower()
-    for _, w in pairs(blacklist) do if n:find(w) then return false end end
-    if not (obj:FindFirstChildWhichIsA("MeshPart", true) or obj:FindFirstChildWhichIsA("SpecialMesh", true)) or not obj:FindFirstChildWhichIsA("BillboardGui", true) then return false end
-    if State.MinStealValue > 0 and getAnimalValue(obj) < State.MinStealValue then return false end
-    return true
-end
-
-local function triggerPrompt(prompt)
-    if not prompt or not prompt.Enabled then return false end
-    pcall(function()
-        if fireproximityprompt then fireproximityprompt(prompt)
-        else prompt:InputHoldBegin() task.wait(prompt.HoldDuration > 0 and (prompt.HoldDuration + 0.05) or 0.1) prompt:InputHoldEnd() end
-    end)
-    return true
-end
-
-local function interactWithAnimal(animalObj, animalPos)
-    local prompt = animalObj:FindFirstChildWhichIsA("ProximityPrompt", true)
-    if prompt then return triggerPrompt(prompt) end
-    local cd = animalObj:FindFirstChildWhichIsA("ClickDetector", true)
-    if cd then pcall(function() if fireclickdetector then fireclickdetector(cd) else cd:Click(player) end end) return true end
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("ProximityPrompt") and obj.Parent and obj.Parent:IsA("BasePart") then
-            if (obj.Parent.Position - animalPos).Magnitude <= 15 then return triggerPrompt(obj) end
-        end
-    end
-    return false
-end
-
-task.spawn(function()
-    local skipped = {}
-    while true do
-        if State.AutoSteal then
-            pcall(function()
-                local char = player.Character
-                local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                if hrp then
-                    local closestAnimal, minDist = nil, 999999
-                    for _, obj in pairs(Workspace:GetDescendants()) do
-                        if isAnimal(obj) and not skipped[obj] then
-                            local ok, pivot = pcall(function() return obj:GetPivot().Position end)
-                            if ok and pivot then
-                                local d = (pivot - hrp.Position).Magnitude
-                                if d < minDist then minDist, closestAnimal = d, obj end
-                            end
-                        end
-                    end
-                    if closestAnimal then
-                        local animalPos = closestAnimal:GetPivot().Position
-                        ultraFastTweenTo(animalPos)
-                        task.wait(0.1)
-                        local success = interactWithAnimal(closestAnimal, animalPos)
-                        ultraFastTweenTo(safeZoneCFrame.Position)
-                        task.wait(0.5)
-                        if not success then
-                            skipped[closestAnimal] = true
-                            task.delay(8, function() skipped[closestAnimal] = nil end)
-                        end
-                    end
-                end
-            end)
-            task.wait(0.1)
-        else task.wait(0.2) end
-    end
-end)
-
-local function fireUpgradeRemote(keywords)
-    pcall(function()
-        for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
-            if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-                local n = obj.Name:lower()
-                for _, kw in pairs(keywords) do if n:find(kw) and obj:IsA("RemoteEvent") then obj:FireServer() end end
-            end
-        end
-    end)
-end
-
-task.spawn(function() while true do if State.UpgradeTreadmill then fireUpgradeRemote({"treadmill", "tread", "mill"}) task.wait(1.5) else task.wait(0.5) end end end)
-task.spawn(function() while true do if State.UpgradePickaxe then fireUpgradeRemote({"pickaxe", "axe", "kapak", "weapon", "tool"}) task.wait(1.5) else task.wait(0.5) end end end)
-task.spawn(function() while true do if State.UpgradeSpeed then fireUpgradeRemote({"speed", "run", "walk", "carry", "capacity"}) task.wait(1.5) else task.wait(0.5) end end end)
-
+-- CONNECTORS & TOGGLES
 breakBtn.MouseButton1Click:Connect(function()
     State.AutoBreak = not State.AutoBreak
     breakBtn.Text = "AUTO BREAK: " .. (State.AutoBreak and "ON" or "OFF")
-    breakBtn.BackgroundColor3 = State.AutoBreak and Color3.fromRGB(35, 130, 70) or Color3.fromRGB(25, 28, 40)
-    if breakStroke then breakStroke.Color = State.AutoBreak and Color3.fromRGB(80, 220, 120) or Color3.fromRGB(45, 50, 70) end
+    breakBtn.BackgroundColor3 = State.AutoBreak and Color3.fromRGB(180, 0, 60) or Color3.fromRGB(22, 24, 32)
+    if breakStroke then breakStroke.Color = State.AutoBreak and Color3.fromRGB(255, 0, 85) or Color3.fromRGB(40, 42, 55) end
 end)
 
 zoneTargetBtn.MouseButton1Click:Connect(function()
@@ -386,15 +298,9 @@ end)
 
 stealBtn.MouseButton1Click:Connect(function()
     State.AutoSteal = not State.AutoSteal
-    stealBtn.Text = "AUTO STEAL: " .. (State.AutoSteal and "ON" or "OFF")
-    stealBtn.BackgroundColor3 = State.AutoSteal and Color3.fromRGB(35, 130, 70) or Color3.fromRGB(25, 28, 40)
-    if stealStroke then stealStroke.Color = State.AutoSteal and Color3.fromRGB(80, 220, 120) or Color3.fromRGB(45, 50, 70) end
-end)
-
-valBtn.MouseButton1Click:Connect(function()
-    currentValIndex = (currentValIndex % #ValueOptions) + 1
-    State.MinStealValue = ValueOptions[currentValIndex]
-    valBtn.Text = "MIN VALUE: " .. ValueLabels[currentValIndex]
+    stealBtn.Text = "CURI OTOMATIS: " .. (State.AutoSteal and "ON" or "OFF")
+    stealBtn.BackgroundColor3 = State.AutoSteal and Color3.fromRGB(180, 0, 60) or Color3.fromRGB(22, 24, 32)
+    if stealStroke then stealStroke.Color = State.AutoSteal and Color3.fromRGB(255, 0, 85) or Color3.fromRGB(40, 42, 55) end
 end)
 
 zoneBtn.MouseButton1Click:Connect(function()
@@ -405,30 +311,23 @@ end)
 
 tpZoneBtn.MouseButton1Click:Connect(function() tpToZone(currentZone) end)
 
-eventBtn.MouseButton1Click:Connect(function()
-    State.AutoEvent = not State.AutoEvent
-    eventBtn.Text = "AUTO EVENT: " .. (State.AutoEvent and "ON" or "OFF")
-    eventBtn.BackgroundColor3 = State.AutoEvent and Color3.fromRGB(35, 130, 70) or Color3.fromRGB(25, 28, 40)
-    if eventStroke then eventStroke.Color = State.AutoEvent and Color3.fromRGB(80, 220, 120) or Color3.fromRGB(45, 50, 70) end
-end)
-
 upTreadmillBtn.MouseButton1Click:Connect(function()
     State.UpgradeTreadmill = not State.UpgradeTreadmill
-    upTreadmillBtn.Text = "UPGRADE TREADMILL: " .. (State.UpgradeTreadmill and "ON" or "OFF")
-    upTreadmillBtn.BackgroundColor3 = State.UpgradeTreadmill and Color3.fromRGB(35, 130, 70) or Color3.fromRGB(25, 28, 40)
-    if strokeTm then strokeTm.Color = State.UpgradeTreadmill and Color3.fromRGB(80, 220, 120) or Color3.fromRGB(45, 50, 70) end
+    upTreadmillBtn.Text = "TREADMILL: " .. (State.UpgradeTreadmill and "ON" or "OFF")
+    upTreadmillBtn.BackgroundColor3 = State.UpgradeTreadmill and Color3.fromRGB(180, 0, 60) or Color3.fromRGB(22, 24, 32)
+    if strokeTm then strokeTm.Color = State.UpgradeTreadmill and Color3.fromRGB(255, 0, 85) or Color3.fromRGB(40, 42, 55) end
 end)
 
 upPickaxeBtn.MouseButton1Click:Connect(function()
     State.UpgradePickaxe = not State.UpgradePickaxe
-    upPickaxeBtn.Text = "UPGRADE KAPAK: " .. (State.UpgradePickaxe and "ON" or "OFF")
-    upPickaxeBtn.BackgroundColor3 = State.UpgradePickaxe and Color3.fromRGB(35, 130, 70) or Color3.fromRGB(25, 28, 40)
-    if strokePickaxe then strokePickaxe.Color = State.UpgradePickaxe and Color3.fromRGB(80, 220, 120) or Color3.fromRGB(45, 50, 70) end
+    upPickaxeBtn.Text = "KAPAK/PICKAXE: " .. (State.UpgradePickaxe and "ON" or "OFF")
+    upPickaxeBtn.BackgroundColor3 = State.UpgradePickaxe and Color3.fromRGB(180, 0, 60) or Color3.fromRGB(22, 24, 32)
+    if strokePickaxe then strokePickaxe.Color = State.UpgradePickaxe and Color3.fromRGB(255, 0, 85) or Color3.fromRGB(40, 42, 55) end
 end)
 
 upSpeedBtn.MouseButton1Click:Connect(function()
     State.UpgradeSpeed = not State.UpgradeSpeed
-    upSpeedBtn.Text = "UPGRADE SPEED/LARI: " .. (State.UpgradeSpeed and "ON" or "OFF")
-    upSpeedBtn.BackgroundColor3 = State.UpgradeSpeed and Color3.fromRGB(35, 130, 70) or Color3.fromRGB(25, 28, 40)
-    if strokeSpeed then strokeSpeed.Color = State.UpgradeSpeed and Color3.fromRGB(80, 220, 120) or Color3.fromRGB(45, 50, 70) end
+    upSpeedBtn.Text = "SPEED/LARI: " .. (State.UpgradeSpeed and "ON" or "OFF")
+    upSpeedBtn.BackgroundColor3 = State.UpgradeSpeed and Color3.fromRGB(180, 0, 60) or Color3.fromRGB(22, 24, 32)
+    if strokeSpeed then strokeSpeed.Color = State.UpgradeSpeed and Color3.fromRGB(255, 0, 85) or Color3.fromRGB(40, 42, 55) end
 end)
