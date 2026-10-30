@@ -1,10 +1,11 @@
 -- ============================================================
--- MAUN HUB: SERENITY STYLE AUTO BREAK & ELEGANT DARK UI
+-- MAUN HUB: OFFICIAL COMPLETE SCRIPT (FIXED RUNTIME & AUTO STEAL)
 -- ============================================================
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 
 -- Remote Check
@@ -18,9 +19,15 @@ pcall(function()
     end
 end)
 
+local ZoneNames = {
+    "Spawn Zone", "Desert Zone", "Ice Zone", "Candy Zone",
+    "Swamp Zone", "Deep Sea Zone", "Volcano Zone", "Cyber Zone",
+    "Heaven Zone", "Void Zone", "Celestial Zone"
+}
+
 local ValueOptions = {0, 100000000, 500000000, 1000000000, 10000000000, 100000000000, 500000000000, 1000000000000}
 local ValueLabels = {"OFF", "100M", "500M", "1B", "10B", "100B", "500B", "1T"}
-local currentValIndex, currentZone = 1, 1
+local currentValIndex, currentZoneIndex = 1, 1
 
 local State = { 
     AutoBreak = false, AutoSteal = false, AutoEvent = false,
@@ -172,18 +179,18 @@ end
 
 -- CONTROLS
 local breakBtn, breakStroke = createContentBtn(farmPage, "AUTO BREAK: OFF", 5)
-local zoneTargetBtn = createContentBtn(farmPage, "BREAK ZONE: 1", 36)
+local zoneTargetBtn = createContentBtn(farmPage, "TARGET: SPAWN ZONE", 36)
 local stealBtn, stealStroke = createContentBtn(farmPage, "CURI OTOMATIS: OFF", 67)
 local valBtn = createContentBtn(farmPage, "MIN VALUE: OFF", 98)
 
-local zoneBtn = createContentBtn(tpPage, "SELECT ZONE: 1", 5)
-local tpZoneBtn = createContentBtn(tpPage, "TELEPORT TO ZONE", 36)
+local zoneBtn = createContentBtn(tpPage, "ZONA: SPAWN ZONE", 5)
+local tpZoneBtn = createContentBtn(tpPage, "TELEPORT KE ZONA", 36)
 
 local upTreadmillBtn, strokeTm = createContentBtn(upgradePage, "TREADMILL: OFF", 5)
 local upPickaxeBtn, strokePickaxe = createContentBtn(upgradePage, "KAPAK/PICKAXE: OFF", 36)
 local upSpeedBtn, strokeSpeed = createContentBtn(upgradePage, "SPEED/LARI: OFF", 67)
 
--- INSTANT TP FUNCTION (DIRECT POSITION SETTING)
+-- INSTANT TP FUNCTION
 local function instantTP(targetCFrame)
     pcall(function()
         local char = player.Character
@@ -197,37 +204,38 @@ local function instantTP(targetCFrame)
     end)
 end
 
-local function getZoneObject(zoneNum)
-    local searchNames = {"zone" .. zoneNum, "zone " .. zoneNum, "area" .. zoneNum, "area " .. zoneNum, "world" .. zoneNum}
+local function getZoneObjectByName(zName)
+    local rawKeyword = zName:gsub(" Zone", ""):lower()
     for _, obj in pairs(Workspace:GetChildren()) do
         local n = obj.Name:lower()
-        for _, sName in pairs(searchNames) do if n == sName or n:find(sName) then return obj end end
+        if n:find(rawKeyword) then return obj end
     end
     for _, obj in pairs(Workspace:GetDescendants()) do
         if obj:IsA("BasePart") or obj:IsA("Model") then
             local n = obj.Name:lower()
-            for _, sName in pairs(searchNames) do if n == sName then return obj end end
+            if n == rawKeyword or n == zName:lower() then return obj end
         end
     end
     return nil
 end
 
-local function tpToZone(zoneNum)
-    local targetObj = getZoneObject(zoneNum)
+local function tpToZone(zName)
+    local targetObj = getZoneObjectByName(zName)
     if targetObj then
         local pos = targetObj:IsA("Model") and targetObj:GetPivot().Position or targetObj.Position
         instantTP(CFrame.new(pos + Vector3.new(0, 3, 0)))
     end
 end
 
--- SERENITY STYLE INSTANT TP AUTO BREAK LOOP (FAST HIT)
+-- INSTANT TP AUTO BREAK LOOP
 task.spawn(function()
     while true do
         if State.AutoBreak then
             pcall(function()
                 local char = player.Character
                 local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                local zoneObj = getZoneObject(currentZone)
+                local activeZoneName = ZoneNames[currentZoneIndex]
+                local zoneObj = getZoneObjectByName(activeZoneName)
                 if hrp then
                     local closestEgg, minDist = nil, 9999
                     for _, obj in pairs(Workspace:GetDescendants()) do
@@ -244,14 +252,12 @@ task.spawn(function()
                         end
                     end
                     if closestEgg and closestEgg.Parent then
-                        -- INSTANT TELEPORT KE SISI TELUR TERDEKAT
                         instantTP(CFrame.new(closestEgg.Position + Vector3.new(0, 3, 0)))
-                        
                         local hitCount = 0
                         while closestEgg and closestEgg.Parent and State.AutoBreak do
                             hitCount = hitCount + 1
                             if eggRemote then eggRemote:FireServer(closestEgg, hitCount) end
-                            task.wait(0.08) -- ULTRA FAST REMOTE SPAM
+                            task.wait(0.08)
                             if hitCount >= 10 or not closestEgg.Parent or (closestEgg:IsA("BasePart") and closestEgg.Transparency > 0.2) then break end
                         end
                     end
@@ -259,6 +265,69 @@ task.spawn(function()
             end)
             task.wait(0.05)
         else task.wait(0.3) end
+    end
+end)
+
+-- AUTO STEAL LOGIC (MATCHING SERENITY HUB VIDEO DEMO)
+local blacklistNames = {"egg", "guard", "shop", "zone", "nest", "part", "base", "spawn", "treadmill", "pickaxe", "cage", "wall", "floor", "plot", "safe", "portal", "door", "gate", "handle", "merchant", "trails", "halloween", "gift", "reward", "sign", "board", "button"}
+
+local function triggerStealPrompt(prompt)
+    if not prompt or not prompt.Enabled then return false end
+    pcall(function()
+        if fireproximityprompt then fireproximityprompt(prompt)
+        else prompt:InputHoldBegin() task.wait(prompt.HoldDuration > 0 and (prompt.HoldDuration + 0.05) or 0.1) prompt:InputHoldEnd() end
+    end)
+    return true
+end
+
+task.spawn(function()
+    local skipped = {}
+    while true do
+        if State.AutoSteal then
+            pcall(function()
+                local char = player.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local targetAnimal, minDist = nil, 999999
+                    for _, obj in pairs(Workspace:GetDescendants()) do
+                        if obj:IsA("Model") and obj ~= char and not Players:GetPlayerFromCharacter(obj) and not skipped[obj] then
+                            local n = obj.Name:lower()
+                            local isBlacklisted = false
+                            for _, bw in pairs(blacklistNames) do if n:find(bw) then isBlacklisted = true break end end
+                            
+                            if not isBlacklisted then
+                                local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true)
+                                if prompt then
+                                    local pPos = prompt.Parent and prompt.Parent.Position or obj:GetPivot().Position
+                                    local d = (pPos - hrp.Position).Magnitude
+                                    if d < minDist then minDist, targetAnimal = d, obj end
+                                end
+                            end
+                        end
+                    end
+
+                    if targetAnimal then
+                        local prompt = targetAnimal:FindFirstChildWhichIsA("ProximityPrompt", true)
+                        if prompt and prompt.Parent then
+                            -- 1. Instant TP ke depan hewan yang akan dicuri
+                            instantTP(CFrame.new(prompt.Parent.Position + Vector3.new(0, 2, 3)))
+                            task.wait(0.1)
+                            -- 2. Interaksi pencurian
+                            local done = triggerStealPrompt(prompt)
+                            task.wait(0.15)
+                            -- 3. Teleport balik instan membawa hewan hasil curian ke Safe Zone / Base
+                            instantTP(safeZoneCFrame)
+                            task.wait(0.5)
+                            if not done then
+                                skipped[targetAnimal] = true
+                                task.delay(8, function() skipped[targetAnimal] = nil end)
+                            end
+                        end
+                    end
+                end
+            end)
+            task.wait(0.1)
+        else task.wait(0.2) end
     end
 end)
 
@@ -271,14 +340,51 @@ breakBtn.MouseButton1Click:Connect(function()
 end)
 
 zoneTargetBtn.MouseButton1Click:Connect(function()
-    currentZone = (currentZone % 11) + 1
-    zoneTargetBtn.Text = "BREAK ZONE: " .. currentZone
-    zoneBtn.Text = "SELECT ZONE: " .. currentZone
+    currentZoneIndex = (currentZoneIndex % #ZoneNames) + 1
+    local name = ZoneNames[currentZoneIndex]
+    zoneTargetBtn.Text = "TARGET: " .. name:upper()
+    zoneBtn.Text = "ZONA: " .. name:upper()
 end)
 
 stealBtn.MouseButton1Click:Connect(function()
     State.AutoSteal = not State.AutoSteal
     stealBtn.Text = "CURI OTOMATIS: " .. (State.AutoSteal and "ON" or "OFF")
     stealBtn.BackgroundColor3 = State.AutoSteal and Color3.fromRGB(180, 0, 60) or Color3.fromRGB(22, 24, 32)
-    if stealStroke me then end
+    if stealStroke then stealStroke.Color = State.AutoSteal and Color3.fromRGB(255, 0, 85) or Color3.fromRGB(40, 42, 55) end
+end)
+
+valBtn.MouseButton1Click:Connect(function()
+    currentValIndex = (currentValIndex % #ValueOptions) + 1
+    State.MinStealValue = ValueOptions[currentValIndex]
+    valBtn.Text = "MIN VALUE: " .. ValueLabels[currentValIndex]
+end)
+
+zoneBtn.MouseButton1Click:Connect(function()
+    currentZoneIndex = (currentZoneIndex % #ZoneNames) + 1
+    local name = ZoneNames[currentZoneIndex]
+    zoneBtn.Text = "ZONA: " .. name:upper()
+    zoneTargetBtn.Text = "TARGET: " .. name:upper()
+end)
+
+tpZoneBtn.MouseButton1Click:Connect(function() tpToZone(ZoneNames[currentZoneIndex]) end)
+
+upTreadmillBtn.MouseButton1Click:Connect(function()
+    State.UpgradeTreadmill = not State.UpgradeTreadmill
+    upTreadmillBtn.Text = "TREADMILL: " .. (State.UpgradeTreadmill and "ON" or "OFF")
+    upTreadmillBtn.BackgroundColor3 = State.UpgradeTreadmill and Color3.fromRGB(180, 0, 60) or Color3.fromRGB(22, 24, 32)
+    if strokeTm then strokeTm.Color = State.UpgradeTreadmill and Color3.fromRGB(255, 0, 85) or Color3.fromRGB(40, 42, 55) end
+end)
+
+upPickaxeBtn.MouseButton1Click:Connect(function()
+    State.UpgradePickaxe = not State.UpgradePickaxe
+    upPickaxeBtn.Text = "KAPAK/PICKAXE: " .. (State.UpgradePickaxe and "ON" or "OFF")
+    upPickaxeBtn.BackgroundColor3 = State.UpgradePickaxe and Color3.fromRGB(180, 0, 60) or Color3.fromRGB(22, 24, 32)
+    if strokePickaxe then strokePickaxe.Color = State.UpgradePickaxe and Color3.fromRGB(255, 0, 85) or Color3.fromRGB(40, 42, 55) end
+end)
+
+upSpeedBtn.MouseButton1Click:Connect(function()
+    State.UpgradeSpeed = not State.UpgradeSpeed
+    upSpeedBtn.Text = "SPEED/LARI: " .. (State.UpgradeSpeed and "ON" or "OFF")
+    upSpeedBtn.BackgroundColor3 = State.UpgradeSpeed and Color3.fromRGB(180, 0, 60) or Color3.fromRGB(22, 24, 32)
+    if strokeSpeed then strokeSpeed.Color = State.UpgradeSpeed and Color3.fromRGB(255, 0, 85) or Color3.fromRGB(40, 42, 55) end
 end)
