@@ -1,10 +1,11 @@
 -- ============================================================
--- MAUN HUB V47: INSTANT BREAK (ZERO ANIMATION WAIT & ANTI-ROLLBACK)
+-- MAUN HUB V48: SMOOTH TWEEN BREAK & FIXED ZONE TP (ANTI-ROLLBACK)
 -- ============================================================
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 
 -- Remote Hit Request
@@ -183,8 +184,8 @@ local upTreadmillBtn, strokeTm = createContentBtn(upgradePage, "TREADMILL: OFF",
 local upPickaxeBtn, strokePickaxe = createContentBtn(upgradePage, "KAPAK/PICKAXE: OFF", 36)
 local upSpeedBtn, strokeSpeed = createContentBtn(upgradePage, "SPEED/LARI: OFF", 67)
 
--- ANTI ROLLBACK INSTANT TELEPORT FUNCTION
-local function antiRollbackTP(targetCFrame)
+-- INSTANT TP FUNCTION FOR STEAL & MANUAL ZONES
+local function instantTP(targetCFrame)
     pcall(function()
         local char = player.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -201,20 +202,38 @@ local function antiRollbackTP(targetCFrame)
     end)
 end
 
--- CARI ZONA DENGAN ANGKA 1-11
-local function getZoneByNumber(num)
-    local keywords = {"zone" .. num, "zone " .. num, "area" .. num, "area " .. num, "world" .. num}
-    for _, obj in pairs(Workspace:GetChildren()) do
-        local n = obj.Name:lower()
-        for _, kw in pairs(keywords) do
-            if n == kw or n:find(kw) then return obj end
+-- SMOOTH TWEEN TP FUNCTION FOR AUTO BREAK (PREVENTS ROLLBACK & RATE LIMIT)
+local currentTween = nil
+local function tweenTP(targetCFrame, speed)
+    pcall(function()
+        local char = player.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local dist = (hrp.Position - targetCFrame.Position).Magnitude
+            local duration = dist / (speed or 120)
+            if duration < 0.05 then duration = 0.05 end
+            
+            if currentTween then currentTween:Cancel() end
+            local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+            currentTween = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame})
+            currentTween:Play()
+            currentTween.Completed:Wait()
         end
-    end
+    end)
+end
+
+-- DETEKSI ZONA NOMOR SANGAT AKURAT
+local function getZoneByNumber(num)
+    local targetKeywords = {
+        "zone" .. num, "zone " .. num, "area" .. num, "area " .. num, "world" .. num, "z" .. num, "world " .. num
+    }
     for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("BasePart") or obj:IsA("Model") then
+        if obj:IsA("BasePart") or obj:IsA("Model") or obj:IsA("Folder") then
             local n = obj.Name:lower()
-            for _, kw in pairs(keywords) do
-                if n == kw then return obj end
+            for _, kw in pairs(targetKeywords) do
+                if n == kw or n:find(kw) then
+                    return obj
+                end
             end
         end
     end
@@ -224,12 +243,17 @@ end
 local function tpToZoneByNum(num)
     local targetObj = getZoneByNumber(num)
     if targetObj then
-        local pos = targetObj:IsA("Model") and targetObj:GetPivot().Position or targetObj.Position
-        antiRollbackTP(CFrame.new(pos + Vector3.new(0, 3, 0)))
+        local pos = targetObj:IsA("Model") and targetObj:GetPivot().Position or (targetObj:IsA("BasePart") and targetObj.Position or nil)
+        if pos then
+            instantTP(CFrame.new(pos + Vector3.new(0, 3, 0)))
+            return
+        end
     end
+    -- Fallback jika zona tidak ditemukan secara eksplisit
+    instantTP(safeZoneCFrame)
 end
 
--- SERENITY STYLE INSTANT AUTO BREAK (NO ANIMATION WAIT)
+-- AUTO BREAK LOOP (TWEEN TP TO EGG + FAST REMOTE HITTING)
 local destroyedEggs = {}
 
 task.spawn(function()
@@ -243,11 +267,13 @@ task.spawn(function()
                 if hrp then
                     local closestEgg, minDist = nil, 99999
                     for _, obj in pairs(Workspace:GetDescendants()) do
-                        if obj:IsA("BasePart") and obj.Name == "Egg" and obj.Parent and not destroyedEggs[obj] then
+                        if obj:IsA("BasePart") and (obj.Name == "Egg" or obj.Name:find("Egg")) and obj.Parent and not destroyedEggs[obj] then
                             local isEggValid = true
                             if zoneObj then
-                                local zPos = zoneObj:IsA("Model") and zoneObj:GetPivot().Position or zoneObj.Position
-                                if (obj.Position - zPos).Magnitude > 120 then isEggValid = false end
+                                local zPos = zoneObj:IsA("Model") and zoneObj:GetPivot().Position or (zoneObj:IsA("BasePart") and zoneObj.Position or nil)
+                                if zPos and (obj.Position - zPos).Magnitude > 150 then
+                                    isEggValid = false
+                                end
                             end
                             if isEggValid then
                                 local d = (obj.Position - hrp.Position).Magnitude
@@ -257,28 +283,28 @@ task.spawn(function()
                     end
 
                     if closestEgg and closestEgg.Parent then
-                        -- Teleport Instan Anti-Rollback ke telur
-                        antiRollbackTP(CFrame.new(closestEgg.Position + Vector3.new(0, 2.5, 0)))
+                        -- Smooth Tween ke posisi telur untuk menghindari Rate Limit & Rollback
+                        tweenTP(CFrame.new(closestEgg.Position + Vector3.new(0, 2.5, 0)), 150)
                         
-                        -- Fire remote secara beruntun sampai estimasi darah habis (tanpa nunggu telur menghilang/animasi pecah)
+                        -- Pukul telur secara instan
                         for i = 1, 8 do
                             if not State.AutoBreak or not closestEgg.Parent then break end
                             if eggRemote then eggRemote:FireServer(closestEgg, i) end
-                            task.wait(0.02) -- Pemukulan ultra cepat
+                            task.wait(0.02)
                         end
                         
-                        -- Tandai bahwa telur ini sudah habis darahnya dan LANGSUNG PINDAH tanpa delay animasi
+                        -- Tandai telur habis darah & lanjut berikutnya
                         destroyedEggs[closestEgg] = true
-                        task.delay(5, function() destroyedEggs[closestEgg] = nil end)
+                        task.delay(6, function() destroyedEggs[closestEgg] = nil end)
                     end
                 end
             end)
-            task.wait(0.01)
+            task.wait(0.05)
         else task.wait(0.3) end
     end
 end)
 
--- STRICT ANTI-KANDANG FILTER (AUTO STEAL)
+-- STRICT ANTI-KANDANG FILTER (AUTO STEAL INSTANT TP)
 local function isInPlotOrBase(obj)
     local current = obj
     while current and current ~= Workspace do
@@ -333,11 +359,11 @@ task.spawn(function()
                     if targetAnimal then
                         local prompt = targetAnimal:FindFirstChildWhichIsA("ProximityPrompt", true)
                         if prompt and prompt.Parent then
-                            antiRollbackTP(CFrame.new(prompt.Parent.Position + Vector3.new(0, 2, 3)))
+                            instantTP(CFrame.new(prompt.Parent.Position + Vector3.new(0, 2, 3)))
                             task.wait(0.1)
                             local done = triggerStealPrompt(prompt)
                             task.wait(0.15)
-                            antiRollbackTP(safeZoneCFrame)
+                            instantTP(safeZoneCFrame)
                             task.wait(0.5)
                             if not done then
                                 skipped[targetAnimal] = true
